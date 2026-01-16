@@ -1,0 +1,24 @@
+﻿{
+  "presets": [
+    {
+      "id": "email_compress",
+      "name": "邮件压缩",
+      "tool_id": "compress_images",
+      "params": { "dpi": 150, "jpeg_quality": 70, "grayscale": false, "max_side": 1600 }
+    },
+    {
+      "id": "wechat_share",
+      "name": "微信分享",
+      "tool_id": "compress_images",
+      "params": { "dpi": 120, "jpeg_quality": 60, "grayscale": false, "max_side": 1200 }
+    },
+    {
+      "id": "archive_bw",
+      "name": "归档黑白",
+      "tool_id": "compress_images",
+      "params": { "dpi": 200, "jpeg_quality": 75, "grayscale": true, "max_side": 2000 }
+    }
+  ]
+}
+
+
