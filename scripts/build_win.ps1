@@ -14,7 +14,12 @@ Set-Location $root
 
 $assets = "assets"
 $addData = "$assets;$assets"
+$distDir = Join-Path $root "dist"
+$oldDir = Join-Path $distDir $Name
+if (Test-Path $oldDir) {
+    Remove-Item -Recurse -Force $oldDir
+}
 
-pyinstaller --noconsole --name $Name --add-data $addData -m pdf_toolbox.app
+pyinstaller --noconsole --onefile --name $Name --add-data $addData --add-data "qrcode_wetchat.png;." src\pdf_toolbox\app.py
 
-Write-Host "Build done. Output in dist/$Name"
+Write-Host "Build done. Output in dist/$Name.exe"

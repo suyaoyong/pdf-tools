@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from pdf_toolbox.core.job_queue import JobQueue
+from pdf_toolbox.config import BASE_DIR
 from pdf_toolbox.ui.tools_panels.compress_panel import CompressPanel
 from pdf_toolbox.ui.tools_panels.convert_panels import ImagesToPdfPanel, PdfToImagesPanel, PptToPdfPanel
 from pdf_toolbox.ui.tools_panels.delete_rotate_panel import DeleteRotatePanel
@@ -30,7 +31,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("PDF 工具箱")
-        self.resize(1000, 700)
+        self.resize(740, 480)
 
         self._init_menu()
 
@@ -63,7 +64,10 @@ class MainWindow(QMainWindow):
             panel.run_btn.clicked.connect(lambda _, p=panel: self._submit(p))
 
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(8, 8, 8, 8)
+        main_layout.setSpacing(6)
         top_layout = QVBoxLayout()
+        top_layout.setSpacing(6)
         nav_layout = QHBoxLayout()
         self.home_btn = QPushButton("返回首页")
         self.home_btn.clicked.connect(self._show_home)
@@ -89,38 +93,49 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self._show_about)
 
     def _show_about(self) -> None:
-        QMessageBox.about(
-            self,
-            "关于 PDF Toolbox Qt",
+        box = QMessageBox(self)
+        box.setWindowTitle("关于 PDF Toolbox Qt")
+        box.setText(
             "PDF Toolbox Qt\n"
             "离线本地 PDF 工具箱（PySide6 + pikepdf + PyMuPDF + Pillow）。\n"
             "支持合并、拆分、删除/旋转/重排、压缩、PDF/图片互转、PPT 转 PDF、OCR。\n"
+            "软件免费使用。\n"
             "版本：0.1.0\n"
             "作者：苏耀勇\n"
-            "许可证：待定\n"
-            "项目地址：github.com/suyaoyong/pdf-tools",
+            "了解新工具、问题反馈、扫码关注公众号。"
         )
+        qr_path = BASE_DIR / "qrcode_wetchat.png"
+        if qr_path.exists():
+            pixmap = QPixmap(str(qr_path)).scaled(
+                QSize(140, 140), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+            box.setIconPixmap(pixmap)
+        box.exec()
 
     def _build_home(self) -> QWidget:
         root = QWidget()
         layout = QVBoxLayout(root)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(6)
+        layout.setAlignment(Qt.AlignTop)
         title = QLabel("功能中心")
-        title.setStyleSheet("font-size: 16px; font-weight: bold;")
-        layout.addWidget(title)
+        title.setStyleSheet("font-size: 13px; font-weight: bold;")
         subtitle = QLabel("离线本地 PDF 工具箱：选择下方功能开始处理文件。")
-        subtitle.setStyleSheet("color: #666666;")
+        subtitle.setStyleSheet("color: #777777; font-size: 11px;")
+
+        layout.addWidget(title)
         layout.addWidget(subtitle)
 
         grid = QGridLayout()
-        grid.setHorizontalSpacing(12)
-        grid.setVerticalSpacing(12)
+        grid.setHorizontalSpacing(8)
+        grid.setVerticalSpacing(6)
 
         buttons = []
         for panel in self._panels:
             btn = QPushButton(panel.title)
-            btn.setMinimumHeight(48)
+            btn.setMinimumHeight(36)
             btn.setIcon(_panel_icon(panel))
-            btn.setIconSize(QSize(18, 18))
+            btn.setIconSize(QSize(16, 16))
             btn.clicked.connect(lambda _, p=panel: self._open_panel(p))
             buttons.append(btn)
 
@@ -131,7 +146,7 @@ class MainWindow(QMainWindow):
             grid.addWidget(btn, row, col)
 
         layout.addLayout(grid)
-        layout.addStretch(1)
+        layout.addSpacing(4)
         return root
 
     def _open_panel(self, panel) -> None:

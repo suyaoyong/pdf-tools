@@ -59,10 +59,15 @@ class ImagesToPdfPanel(ToolPanel):
         self.image_inputs = FilePicker(
             "输入图片", mode="files", filter_text="Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
         )
+        self.page_size = QComboBox()
+        self.page_size.addItem("A4", "a4")
+        self.page_size.addItem("Letter", "letter")
         self.output = OutputOptions()
         self.run_btn = QPushButton("开始转换")
 
         layout.addWidget(self.image_inputs)
+        layout.addWidget(QLabel("页面尺寸"))
+        layout.addWidget(self.page_size)
         layout.addWidget(self.output)
         layout.addWidget(self.run_btn)
 
@@ -72,7 +77,7 @@ class ImagesToPdfPanel(ToolPanel):
             inputs=self.image_inputs.paths(),
             output_dir=self.output.output_dir_path(),
             output_name=self.output.output_name_text(),
-            params={},
+            params={"page_size": self.page_size.currentData()},
             overwrite=self.output.overwrite_checked(),
         )
 

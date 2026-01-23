@@ -3,7 +3,14 @@
 from typing import Dict
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QProgressBar, QPushButton
+from PySide6.QtWidgets import (
+    QHeaderView,
+    QProgressBar,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QWidget,
+)
 
 from pdf_toolbox.core.models import JobProgress, JobResult
 
@@ -12,10 +19,15 @@ class ProgressList(QTableWidget):
     def __init__(self) -> None:
         super().__init__(0, 4)
         self.setHorizontalHeaderLabels(["任务", "进度", "状态", "操作"])
-        self.setColumnWidth(0, 200)
-        self.setColumnWidth(1, 150)
-        self.setColumnWidth(2, 260)
-        self.setColumnWidth(3, 80)
+        self.setColumnWidth(0, 180)
+        self.setColumnWidth(1, 140)
+        self.setColumnWidth(2, 220)
+        self.setColumnWidth(3, 70)
+        self.horizontalHeader().setFixedHeight(24)
+        self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.verticalHeader().setVisible(False)
+        self.verticalHeader().setDefaultSectionSize(26)
         self._rows: Dict[str, int] = {}
         self._cancel_callbacks: Dict[str, callable] = {}
 
