@@ -3,13 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from pdf_toolbox.core.models import JobResult, JobSpec
+from pdf_toolbox.i18n import t
 from pdf_toolbox.services.io.validators import ValidationError
 from pdf_toolbox.services.pdf_ops.base import PdfOperation, ProgressCb
 
 
 class PptToPdfOperation(PdfOperation):
     tool_id = "ppt_to_pdf"
-    display_name = "PPT 转 PDF"
+    display_name = "PPT to PDF"
 
     _allowed_exts = {".ppt", ".pptx", ".pps", ".ppsx"}
 
@@ -17,14 +18,14 @@ class PptToPdfOperation(PdfOperation):
         super().validate(spec)
         for path in spec.inputs:
             if path.suffix.lower() not in self._allowed_exts:
-                raise ValidationError(f"不支持的文件类型: {path.name}")
+                raise ValidationError(t("err_invalid_file_type", name=path.name))
 
     def run(self, spec: JobSpec, progress_cb: ProgressCb, token) -> JobResult:
         try:
             import pythoncom
             import win32com.client  # type: ignore
         except Exception as exc:  # noqa: BLE001
-            return JobResult(success=False, error=f"未安装 Office/WPS 支持组件: {exc}")
+            return JobResult(success=False, error=t("err_missing_office_components", error=exc))
 
         pythoncom.CoInitialize()
         app = None
@@ -37,7 +38,7 @@ class PptToPdfOperation(PdfOperation):
 
             for idx, src in enumerate(spec.inputs, start=1):
                 self._check_cancel(token)
-                progress_cb("processing", idx - 1, total, f"转换 {src.name}")
+                progress_cb("processing", idx - 1, total, t("progress_convert_file", name=src.name))
 
                 out_path = self._output_path(
                     src,
@@ -57,7 +58,7 @@ class PptToPdfOperation(PdfOperation):
                         presentation.Close()
 
                 outputs.append(out_path)
-                progress_cb("processing", idx, total, f"完成 {src.name}")
+                progress_cb("processing", idx, total, t("progress_complete_file", name=src.name))
 
             return JobResult(success=True, outputs=outputs)
         finally:
@@ -76,7 +77,7 @@ def _create_ppt_app(win32_client):
             return win32_client.DispatchEx(prog_id)
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
-    raise RuntimeError(f"未检测到可用的 PPT 引擎，请安装 PowerPoint 或 WPS 演示。({last_exc})")
+    raise RuntimeError(t("err_no_ppt_engine", error=last_exc))
 
 
 def _configure_app(app) -> None:

@@ -13,12 +13,15 @@ from PySide6.QtWidgets import (
 )
 
 from pdf_toolbox.core.models import JobProgress, JobResult
+from pdf_toolbox.i18n import t
 
 
 class ProgressList(QTableWidget):
     def __init__(self) -> None:
         super().__init__(0, 4)
-        self.setHorizontalHeaderLabels(["任务", "进度", "状态", "操作"])
+        self.setHorizontalHeaderLabels(
+            [t("header_task"), t("header_progress"), t("header_status"), t("header_action")]
+        )
         self.setColumnWidth(0, 180)
         self.setColumnWidth(1, 140)
         self.setColumnWidth(2, 220)
@@ -42,9 +45,9 @@ class ProgressList(QTableWidget):
         progress.setRange(0, 100)
         progress.setValue(0)
         self.setCellWidget(row, 1, progress)
-        self.setItem(row, 2, QTableWidgetItem("等待中"))
+        self.setItem(row, 2, QTableWidgetItem(t("status_waiting")))
 
-        btn = QPushButton("取消")
+        btn = QPushButton(t("action_cancel"))
         btn.clicked.connect(lambda: cancel_cb(job_id))
         self.setCellWidget(row, 3, btn)
 
@@ -56,7 +59,8 @@ class ProgressList(QTableWidget):
         if isinstance(bar, QProgressBar) and progress.total > 0:
             value = int(progress.current * 100 / progress.total)
             bar.setValue(value)
-        status = f"{progress.stage}: {progress.message}" if progress.message else progress.stage
+        stage = _translate_stage(progress.stage)
+        status = f"{stage}: {progress.message}" if progress.message else stage
         item = self.item(row, 2)
         if item:
             item.setText(status)
@@ -71,13 +75,48 @@ class ProgressList(QTableWidget):
         item = self.item(row, 2)
         if item:
             if result.cancelled:
-                item.setText("已取消")
+                item.setText(t("status_cancelled"))
             elif result.success:
-                item.setText("完成")
+                item.setText(t("status_completed"))
             else:
-                item.setText(result.error or "失败")
+                item.setText(result.error or t("status_failed"))
         btn = self.cellWidget(row, 3)
         if isinstance(btn, QPushButton):
             btn.setEnabled(False)
+
+    def apply_language(self) -> None:
+        self.setHorizontalHeaderLabels(
+            [t("header_task"), t("header_progress"), t("header_status"), t("header_action")]
+        )
+        for row in range(self.rowCount()):
+            item = self.item(row, 2)
+            if item:
+                item.setText(_translate_status(item.text()))
+            btn = self.cellWidget(row, 3)
+            if isinstance(btn, QPushButton):
+                btn.setText(t("action_cancel"))
+
+
+def _translate_stage(stage: str) -> str:
+    stages = {
+        "processing": t("stage_processing"),
+        "writing": t("stage_writing"),
+    }
+    return stages.get(stage, stage)
+
+
+def _translate_status(status: str) -> str:
+    map_keys = {
+        "Waiting": "status_waiting",
+        "等待中": "status_waiting",
+        "Cancelled": "status_cancelled",
+        "已取消": "status_cancelled",
+        "Completed": "status_completed",
+        "完成": "status_completed",
+        "Failed": "status_failed",
+        "失败": "status_failed",
+    }
+    key = map_keys.get(status)
+    return t(key) if key else status
 
 

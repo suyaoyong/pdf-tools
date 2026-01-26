@@ -3,12 +3,13 @@
 import pikepdf
 
 from pdf_toolbox.core.models import JobResult, JobSpec
+from pdf_toolbox.i18n import t
 from pdf_toolbox.services.pdf_ops.base import PdfOperation, ProgressCb
 
 
 class CompressBasicOperation(PdfOperation):
     tool_id = "compress_basic"
-    display_name = "基础压缩"
+    display_name = "Basic Compression"
 
     def run(self, spec: JobSpec, progress_cb: ProgressCb, token) -> JobResult:
         linearize = bool(spec.params.get("linearize", False))
@@ -29,9 +30,9 @@ class CompressBasicOperation(PdfOperation):
             )
 
             with pikepdf.open(src) as pdf:
-                progress_cb("processing", 1, 1, f"重写: {src.name}")
+                progress_cb("processing", 1, 1, f"{t('stage_writing')}: {src.name}")
                 if token.is_cancelled():
-                    return JobResult(success=False, cancelled=True, error="任务已取消")
+                    return JobResult(success=False, cancelled=True, error=t("err_cancelled"))
                 save_kwargs = {"linearize": linearize}
                 if recompress:
                     try:

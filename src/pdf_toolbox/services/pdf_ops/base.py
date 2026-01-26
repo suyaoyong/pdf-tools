@@ -6,6 +6,7 @@ from typing import Callable
 
 from pdf_toolbox.core.cancel import CancellationToken
 from pdf_toolbox.core.models import JobResult, JobSpec
+from pdf_toolbox.i18n import t
 from pdf_toolbox.services.io.naming import resolve_output_path
 from pdf_toolbox.services.io.validators import ensure_inputs, ensure_output_dir, ValidationError
 
@@ -42,7 +43,7 @@ class PdfOperation(ABC):
 
     def _check_cancel(self, token: CancellationToken) -> None:
         if token.is_cancelled():
-            raise RuntimeError("任务已取消")
+            raise RuntimeError(t("err_cancelled"))
 
     @abstractmethod
     def run(self, spec: JobSpec, progress_cb: ProgressCb, token: CancellationToken) -> JobResult:

@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from pdf_toolbox.core.job_queue import JobQueue
 from pdf_toolbox.config import BASE_DIR
+from pdf_toolbox.i18n import get_language, set_language, t
 from pdf_toolbox.ui.tools_panels.compress_panel import CompressPanel
 from pdf_toolbox.ui.tools_panels.convert_panels import ImagesToPdfPanel, PdfToImagesPanel, PptToPdfPanel
 from pdf_toolbox.ui.tools_panels.delete_rotate_panel import DeleteRotatePanel
@@ -30,7 +31,7 @@ from pdf_toolbox.services.io.validators import ValidationError
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("PDF 工具箱")
+        self.setWindowTitle(t("window_title"))
         self.resize(740, 480)
 
         self._init_menu()
@@ -54,6 +55,7 @@ class MainWindow(QMainWindow):
             OcrPanel(),
         ]
         self._panel_index: dict[object, int] = {}
+        self._panel_buttons: list[QPushButton] = []
 
         self.home_page = self._build_home()
         self.stack.addWidget(self.home_page)
@@ -69,12 +71,16 @@ class MainWindow(QMainWindow):
         top_layout = QVBoxLayout()
         top_layout.setSpacing(6)
         nav_layout = QHBoxLayout()
-        self.home_btn = QPushButton("返回首页")
+        self.home_btn = QPushButton(t("nav_home"))
         self.home_btn.clicked.connect(self._show_home)
-        self.title_label = QLabel("功能中心")
+        self.title_label = QLabel(t("nav_tools"))
+        self.lang_btn = QPushButton()
+        self.lang_btn.clicked.connect(self._toggle_language)
+        self._set_lang_button_text()
         nav_layout.addWidget(self.home_btn)
         nav_layout.addWidget(self.title_label)
         nav_layout.addStretch(1)
+        nav_layout.addWidget(self.lang_btn)
 
         top_layout.addLayout(nav_layout)
         top_layout.addWidget(self.stack)
@@ -85,25 +91,18 @@ class MainWindow(QMainWindow):
         root.setLayout(main_layout)
         self.setCentralWidget(root)
         self._show_home()
+        self._apply_language()
 
     def _init_menu(self) -> None:
         menubar = self.menuBar()
-        help_menu = menubar.addMenu("帮助")
-        about_action = help_menu.addAction("关于")
-        about_action.triggered.connect(self._show_about)
+        self.help_menu = menubar.addMenu(t("menu_help"))
+        self.about_action = self.help_menu.addAction(t("menu_about"))
+        self.about_action.triggered.connect(self._show_about)
 
     def _show_about(self) -> None:
         box = QMessageBox(self)
-        box.setWindowTitle("关于 PDF Toolbox Qt")
-        box.setText(
-            "PDF Toolbox Qt\n"
-            "离线本地 PDF 工具箱（PySide6 + pikepdf + PyMuPDF + Pillow）。\n"
-            "支持合并、拆分、删除/旋转/重排、压缩、PDF/图片互转、PPT 转 PDF、OCR。\n"
-            "软件免费使用。\n"
-            "版本：0.1.0\n"
-            "作者：苏耀勇\n"
-            "了解新工具、问题反馈、扫码关注公众号。"
-        )
+        box.setWindowTitle(t("about_title"))
+        box.setText(t("about_text"))
         qr_path = BASE_DIR / "qrcode_wetchat.png"
         if qr_path.exists():
             pixmap = QPixmap(str(qr_path)).scaled(
@@ -118,29 +117,28 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(8, 6, 8, 6)
         layout.setSpacing(6)
         layout.setAlignment(Qt.AlignTop)
-        title = QLabel("功能中心")
-        title.setStyleSheet("font-size: 13px; font-weight: bold;")
-        subtitle = QLabel("离线本地 PDF 工具箱：选择下方功能开始处理文件。")
-        subtitle.setStyleSheet("color: #777777; font-size: 11px;")
+        self.home_title_label = QLabel(t("home_title"))
+        self.home_title_label.setStyleSheet("font-size: 13px; font-weight: bold;")
+        self.home_subtitle_label = QLabel(t("home_subtitle"))
+        self.home_subtitle_label.setStyleSheet("color: #777777; font-size: 11px;")
 
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        layout.addWidget(self.home_title_label)
+        layout.addWidget(self.home_subtitle_label)
 
         grid = QGridLayout()
         grid.setHorizontalSpacing(8)
         grid.setVerticalSpacing(6)
 
-        buttons = []
         for panel in self._panels:
             btn = QPushButton(panel.title)
             btn.setMinimumHeight(36)
             btn.setIcon(_panel_icon(panel))
             btn.setIconSize(QSize(16, 16))
             btn.clicked.connect(lambda _, p=panel: self._open_panel(p))
-            buttons.append(btn)
+            self._panel_buttons.append(btn)
 
         cols = 4
-        for idx, btn in enumerate(buttons):
+        for idx, btn in enumerate(self._panel_buttons):
             row = idx // cols
             col = idx % cols
             grid.addWidget(btn, row, col)
@@ -159,18 +157,18 @@ class MainWindow(QMainWindow):
 
     def _show_home(self) -> None:
         self.stack.setCurrentIndex(0)
-        self.title_label.setText("功能中心")
+        self.title_label.setText(t("nav_tools"))
         self.home_btn.setEnabled(False)
 
     def _submit(self, panel) -> None:
         try:
             spec = panel.build_spec()
             if not spec.inputs:
-                raise ValidationError("未选择输入文件")
+                raise ValidationError(t("err_no_input_files"))
             if not spec.output_dir:
-                raise ValidationError("未选择输出目录")
+                raise ValidationError(t("err_no_output_dir"))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "参数错误", str(exc))
+            QMessageBox.warning(self, t("invalid_params_title"), str(exc))
             return
 
         job_id = self.queue.submit(spec)
@@ -182,27 +180,57 @@ class MainWindow(QMainWindow):
     def _on_finished(self, job_id, result) -> None:
         self.progress_list.finish(job_id, result)
         if not result.success and not result.cancelled:
-            QMessageBox.warning(self, "任务失败", result.error or "未知错误")
+            QMessageBox.warning(self, t("task_failed_title"), result.error or t("unknown_error"))
+
+    def _toggle_language(self) -> None:
+        new_lang = "zh" if get_language() == "en" else "en"
+        set_language(new_lang)
+        self._set_lang_button_text()
+        self._apply_language()
+
+    def _set_lang_button_text(self) -> None:
+        self.lang_btn.setText(t("lang_to_zh") if get_language() == "en" else t("lang_to_en"))
+
+    def _apply_language(self) -> None:
+        self.setWindowTitle(t("window_title"))
+        self.home_btn.setText(t("nav_home"))
+        self._set_lang_button_text()
+        if self.stack.currentIndex() == 0:
+            self.title_label.setText(t("nav_tools"))
+        else:
+            for panel, index in self._panel_index.items():
+                if index == self.stack.currentIndex():
+                    self.title_label.setText(panel.title)
+                    break
+        self.help_menu.setTitle(t("menu_help"))
+        self.about_action.setText(t("menu_about"))
+        self.home_title_label.setText(t("home_title"))
+        self.home_subtitle_label.setText(t("home_subtitle"))
+        for panel, btn in zip(self._panels, self._panel_buttons):
+            btn.setText(panel.title)
+        for panel in self._panels:
+            panel.apply_language()
+        self.progress_list.apply_language()
 
 
 def _panel_icon(panel) -> QIcon:
-    title = getattr(panel, "title", "")
-    if "合并" in title:
+    tool_id = getattr(panel, "tool_id", "")
+    if tool_id == "merge":
         return QIcon.fromTheme("list-add")
-    if "拆分" in title or "提取" in title:
+    if tool_id == "split_extract":
         return QIcon.fromTheme("view-split-left-right")
-    if "删除" in title or "旋转" in title:
+    if tool_id in {"delete_rotate", "delete_pages", "rotate_pages"}:
         return QIcon.fromTheme("edit-delete")
-    if "重排" in title:
+    if tool_id == "reorder_pages":
         return QIcon.fromTheme("view-sort-ascending")
-    if "压缩" in title:
+    if tool_id in {"compress", "compress_basic", "compress_images"}:
         return QIcon.fromTheme("folder-compressed")
-    if "PDF -> 图片" in title:
+    if tool_id == "pdf_to_images":
         return QIcon.fromTheme("image-x-generic")
-    if "图片 -> PDF" in title:
+    if tool_id == "images_to_pdf":
         return QIcon.fromTheme("x-office-document")
-    if "PPT -> PDF" in title:
+    if tool_id == "ppt_to_pdf":
         return QIcon.fromTheme("x-office-presentation")
-    if "OCR" in title or "识别" in title:
+    if tool_id == "ocr":
         return QIcon.fromTheme("insert-text")
     return QIcon.fromTheme("applications-graphics")

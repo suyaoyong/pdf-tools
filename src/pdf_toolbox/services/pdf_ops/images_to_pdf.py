@@ -6,17 +6,18 @@ import fitz
 from PIL import Image
 
 from pdf_toolbox.core.models import JobResult, JobSpec
+from pdf_toolbox.i18n import t
 from pdf_toolbox.services.pdf_ops.base import PdfOperation, ProgressCb
 
 
 class ImagesToPdfOperation(PdfOperation):
     tool_id = "images_to_pdf"
-    display_name = "图片转 PDF"
+    display_name = "Images to PDF"
 
     def run(self, spec: JobSpec, progress_cb: ProgressCb, token) -> JobResult:
         page_size = _page_size_from_params(spec.params)
         if not spec.inputs:
-            return JobResult(success=False, error="未选择图片")
+            return JobResult(success=False, error=t("err_no_images_selected"))
 
         out_path = self._output_path(
             spec.inputs[0], spec.output_dir, "_images", spec.output_name, ext=".pdf", overwrite=spec.overwrite
@@ -27,8 +28,8 @@ class ImagesToPdfOperation(PdfOperation):
         try:
             for i, img_path in enumerate(spec.inputs):
                 if token.is_cancelled():
-                    return JobResult(success=False, cancelled=True, error="任务已取消")
-                progress_cb("processing", i + 1, total, f"处理图片 {i + 1}")
+                    return JobResult(success=False, cancelled=True, error=t("err_cancelled"))
+                progress_cb("processing", i + 1, total, t("progress_process_page", page=i + 1))
                 with Image.open(img_path) as img:
                     rgb = img.convert("RGB")
                     img_bytes = _image_bytes(rgb)
@@ -37,7 +38,7 @@ class ImagesToPdfOperation(PdfOperation):
                     page.insert_image(rect, stream=img_bytes)
                     rgb.close()
             if doc.page_count == 0:
-                return JobResult(success=False, error="未选择图片")
+                return JobResult(success=False, error=t("err_no_images_selected"))
             doc.save(out_path)
         finally:
             doc.close()

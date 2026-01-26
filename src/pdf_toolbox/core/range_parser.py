@@ -3,6 +3,7 @@
 import re
 from typing import Iterable, List, Optional
 
+from pdf_toolbox.i18n import t
 
 _RANGE_RE = re.compile(r"^(\d+)(?:-(\d+))?$")
 
@@ -20,7 +21,7 @@ def _iter_tokens(expr: str) -> Iterable[str]:
 
 def parse_page_range(expr: str, max_pages: Optional[int] = None) -> List[int]:
     if not expr or not expr.strip():
-        raise RangeParseError("页码范围为空")
+        raise RangeParseError(t("range_empty"))
 
     seen = set()
     result: List[int] = []
@@ -28,22 +29,22 @@ def parse_page_range(expr: str, max_pages: Optional[int] = None) -> List[int]:
     for token in _iter_tokens(expr):
         match = _RANGE_RE.match(token)
         if not match:
-            raise RangeParseError(f"无效范围: {token}")
+            raise RangeParseError(t("range_invalid", token=token))
         start = int(match.group(1))
         end = int(match.group(2) or start)
         if start < 1 or end < 1:
-            raise RangeParseError("页码必须 >= 1")
+            raise RangeParseError(t("range_page_min"))
         if start > end:
-            raise RangeParseError(f"范围起始大于结束: {token}")
+            raise RangeParseError(t("range_start_gt_end", token=token))
         for page in range(start, end + 1):
             if max_pages is not None and page > max_pages:
-                raise RangeParseError(f"页码超出总页数: {page} > {max_pages}")
+                raise RangeParseError(t("range_page_out_of_range", page=page, max_pages=max_pages))
             if page not in seen:
                 seen.add(page)
                 result.append(page - 1)  # 0-based
 
     if not result:
-        raise RangeParseError("页码范围为空")
+        raise RangeParseError(t("range_empty"))
 
     return result
 

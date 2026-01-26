@@ -4,12 +4,13 @@ import fitz
 from PIL import Image
 
 from pdf_toolbox.core.models import JobResult, JobSpec
+from pdf_toolbox.i18n import t
 from pdf_toolbox.services.pdf_ops.base import PdfOperation, ProgressCb
 
 
 class PdfToImagesOperation(PdfOperation):
     tool_id = "pdf_to_images"
-    display_name = "PDF 转图片"
+    display_name = "PDF to Images"
 
     def run(self, spec: JobSpec, progress_cb: ProgressCb, token) -> JobResult:
         dpi = int(spec.params.get("dpi", 150))
@@ -25,7 +26,7 @@ class PdfToImagesOperation(PdfOperation):
             for i in range(total_pages):
                 if token.is_cancelled():
                     doc.close()
-                    return JobResult(success=False, cancelled=True, error="任务已取消")
+                    return JobResult(success=False, cancelled=True, error=t("err_cancelled"))
                 page = doc.load_page(i)
                 zoom = dpi / 72.0
                 mat = fitz.Matrix(zoom, zoom)
@@ -44,7 +45,7 @@ class PdfToImagesOperation(PdfOperation):
                 )
                 img.save(out_path, format=pil_format)
                 outputs.append(out_path)
-                progress_cb("processing", i + 1, total_pages, f"导出页 {i + 1}")
+                progress_cb("processing", i + 1, total_pages, t("progress_export_page", page=i + 1))
 
             doc.close()
 

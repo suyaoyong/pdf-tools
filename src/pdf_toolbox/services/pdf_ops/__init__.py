@@ -10,6 +10,7 @@ from pdf_toolbox.services.pdf_ops.ppt_to_pdf import PptToPdfOperation
 from pdf_toolbox.services.pdf_ops.reorder_pages import ReorderPagesOperation
 from pdf_toolbox.services.pdf_ops.rotate_pages import RotatePagesOperation
 from pdf_toolbox.services.pdf_ops.split_extract import SplitExtractOperation
+from pdf_toolbox.i18n import t
 
 _OPS = [
     MergeOperation(),
@@ -30,5 +31,5 @@ OP_REGISTRY = {op.tool_id: op for op in _OPS}
 
 def get_operation(tool_id: str) -> PdfOperation:
     if tool_id not in OP_REGISTRY:
-        raise ValueError(f"未找到工具: {tool_id}")
+        raise ValueError(t("err_tool_not_found", tool_id=tool_id))
     return OP_REGISTRY[tool_id]

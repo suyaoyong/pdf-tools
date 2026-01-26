@@ -3,6 +3,7 @@
 import pikepdf
 
 from pdf_toolbox.core.models import JobResult, JobSpec
+from pdf_toolbox.i18n import t
 from pdf_toolbox.core.range_parser import parse_page_range
 from pdf_toolbox.services.io.validators import ValidationError
 from pdf_toolbox.services.pdf_ops.base import PdfOperation, ProgressCb
@@ -10,7 +11,7 @@ from pdf_toolbox.services.pdf_ops.base import PdfOperation, ProgressCb
 
 class ReorderPagesOperation(PdfOperation):
     tool_id = "reorder_pages"
-    display_name = "重排页"
+    display_name = "Reorder Pages"
 
     def run(self, spec: JobSpec, progress_cb: ProgressCb, token) -> JobResult:
         order_expr = spec.params.get("order", "")
@@ -22,14 +23,14 @@ class ReorderPagesOperation(PdfOperation):
                 total_pages = len(pdf.pages)
                 order = parse_page_range(order_expr, total_pages)
                 if len(order) != total_pages:
-                    raise ValidationError("重排必须覆盖所有页且不重复")
+                    raise ValidationError(t("err_reorder_must_cover_all"))
 
                 out_pdf = pikepdf.Pdf.new()
                 for i, page_index in enumerate(order, start=1):
                     if token.is_cancelled():
-                        return JobResult(success=False, cancelled=True, error="任务已取消")
+                        return JobResult(success=False, cancelled=True, error=t("err_cancelled"))
                     out_pdf.pages.append(pdf.pages[page_index])
-                    progress_cb("processing", i, total_pages, f"重排页 {page_index + 1}")
+                    progress_cb("processing", i, total_pages, t("progress_reorder_page", page=page_index + 1))
 
                 name_index = idx if spec.output_name and total_inputs > 1 else None
                 out_path = self._output_path(

@@ -5,6 +5,7 @@ from PySide6.QtCore import QCoreApplication, QEventLoop, QTimer
 
 from pdf_toolbox.core.job_queue import JobQueue
 from pdf_toolbox.core.models import JobResult, JobSpec
+from pdf_toolbox.i18n import t
 from pdf_toolbox.services.pdf_ops import OP_REGISTRY
 from pdf_toolbox.services.pdf_ops.base import PdfOperation
 
@@ -20,7 +21,7 @@ class DummyOp(PdfOperation):
         total = 50
         for i in range(total):
             if token.is_cancelled():
-                return JobResult(success=False, cancelled=True, error="任务已取消")
+                return JobResult(success=False, cancelled=True, error=t("err_cancelled"))
             time.sleep(0.01)
             progress_cb("processing", i + 1, total, "")
         return JobResult(success=True, outputs=[])

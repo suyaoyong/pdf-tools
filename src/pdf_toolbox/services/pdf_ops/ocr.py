@@ -13,16 +13,17 @@ from PIL import Image
 
 from pdf_toolbox.core.models import JobResult, JobSpec
 from pdf_toolbox.config import BASE_DIR
+from pdf_toolbox.i18n import t
 from pdf_toolbox.services.pdf_ops.base import PdfOperation, ProgressCb
 
 
 class OcrOperation(PdfOperation):
     tool_id = "ocr"
-    display_name = "OCR 识别"
+    display_name = "OCR"
 
     def run(self, spec: JobSpec, progress_cb: ProgressCb, token) -> JobResult:
         if not spec.params.get("output_pdf") and not spec.params.get("output_docx"):
-            return JobResult(success=False, error="请至少选择一种输出格式。")
+            return JobResult(success=False, error=t("err_ocr_need_output"))
         bundled = BASE_DIR / "tesseract" / "tesseract.exe"
         tesseract_cmd = (
             os.environ.get("TESSERACT_CMD")
@@ -31,10 +32,7 @@ class OcrOperation(PdfOperation):
             or shutil.which("tesseract.exe")
         )
         if not tesseract_cmd:
-            return JobResult(
-                success=False,
-                error="未检测到 Tesseract OCR。请在应用目录放置 tesseract\\tesseract.exe，或设置环境变量 TESSERACT_CMD，或配置到 PATH。",
-            )
+            return JobResult(success=False, error=t("err_no_tesseract"))
         pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
         dpi = int(spec.params.get("dpi", 300))
@@ -44,7 +42,7 @@ class OcrOperation(PdfOperation):
         total_inputs = len(spec.inputs)
         for idx, src in enumerate(spec.inputs, start=1):
             if token.is_cancelled():
-                return JobResult(success=False, cancelled=True, error="任务已取消")
+                return JobResult(success=False, cancelled=True, error=t("err_cancelled"))
 
             doc = fitz.open(src)
             total_pages = doc.page_count
@@ -81,7 +79,7 @@ class OcrOperation(PdfOperation):
             for i in range(total_pages):
                 if token.is_cancelled():
                     doc.close()
-                    return JobResult(success=False, cancelled=True, error="任务已取消")
+                    return JobResult(success=False, cancelled=True, error=t("err_cancelled"))
 
                 page = doc.load_page(i)
                 zoom = dpi / 72.0
@@ -101,7 +99,12 @@ class OcrOperation(PdfOperation):
                     if i < total_pages - 1:
                         docx.add_page_break()
 
-                progress_cb("processing", i + 1, total_pages, f"OCR: {src.name} 第 {i + 1} 页")
+                progress_cb(
+                    "processing",
+                    i + 1,
+                    total_pages,
+                    t("progress_ocr_page", name=src.name, page=i + 1),
+                )
 
             doc.close()
 

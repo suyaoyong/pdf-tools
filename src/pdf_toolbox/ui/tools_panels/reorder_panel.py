@@ -7,24 +7,26 @@ from pdf_toolbox.ui.tools_panels.base import ToolPanel
 from pdf_toolbox.ui.widgets.file_picker import FilePicker
 from pdf_toolbox.ui.widgets.range_input import RangeInput
 from pdf_toolbox.ui.widgets.output_options import OutputOptions
+from pdf_toolbox.i18n import t
 
 
 class ReorderPanel(ToolPanel):
     tool_id = "reorder_pages"
-    title = "重排"
+    title_key = "panel_reorder"
 
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
 
-        self.input_pdf = FilePicker("输入PDF", mode="files", filter_text="PDF Files (*.pdf)")
-        self.order_input = RangeInput("新顺序", "3,1,2,4-6")
+        self.input_pdf = FilePicker("label_input_pdf", mode="files", filter_text="PDF Files (*.pdf)")
+        self.order_input = RangeInput("label_new_order", "placeholder_new_order")
         self.output = OutputOptions()
-        self.run_btn = QPushButton("开始重排")
+        self.run_btn = QPushButton(t("btn_start_reorder"))
+        self.tip_label = QLabel(t("label_tip_reorder"))
 
         layout.addWidget(self.input_pdf)
         layout.addWidget(self.order_input)
-        layout.addWidget(QLabel("提示: 顺序必须覆盖所有页且不重复"))
+        layout.addWidget(self.tip_label)
         layout.addWidget(self.output)
         layout.addWidget(self.run_btn)
 
@@ -37,5 +39,12 @@ class ReorderPanel(ToolPanel):
             params={"order": self.order_input.text()},
             overwrite=self.output.overwrite_checked(),
         )
+
+    def apply_language(self) -> None:
+        self.input_pdf.apply_language()
+        self.order_input.apply_language()
+        self.tip_label.setText(t("label_tip_reorder"))
+        self.output.apply_language()
+        self.run_btn.setText(t("btn_start_reorder"))
 
 

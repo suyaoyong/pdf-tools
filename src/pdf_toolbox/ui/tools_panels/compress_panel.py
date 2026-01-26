@@ -7,26 +7,27 @@ from pdf_toolbox.ui.tools_panels.base import ToolPanel
 from pdf_toolbox.ui.widgets.file_picker import FilePicker
 from pdf_toolbox.ui.widgets.output_options import OutputOptions
 from pdf_toolbox.ui.widgets.preset_picker import PresetPicker
+from pdf_toolbox.i18n import t
 
 
 class CompressPanel(ToolPanel):
     tool_id = "compress"
-    title = "压缩"
+    title_key = "panel_compress"
 
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
 
-        self.inputs = FilePicker("输入PDF", mode="files", filter_text="PDF Files (*.pdf)")
+        self.inputs = FilePicker("label_input_pdf", mode="files", filter_text="PDF Files (*.pdf)")
 
         self.mode = QComboBox()
-        self.mode.addItem("基础压缩", "compress_basic")
-        self.mode.addItem("图片重编码压缩", "compress_images")
+        self.mode.addItem(t("label_basic_compress"), "compress_basic")
+        self.mode.addItem(t("label_image_reencode"), "compress_images")
 
         self.preset = PresetPicker()
 
-        self.linearize = QCheckBox("线性化 (网络优化)")
-        self.recompress = QCheckBox("重压缩流")
+        self.linearize = QCheckBox(t("label_linearize"))
+        self.recompress = QCheckBox(t("label_recompress"))
         self.recompress.setChecked(True)
 
         self.dpi = QSpinBox()
@@ -42,17 +43,18 @@ class CompressPanel(ToolPanel):
         self.max_side.setRange(500, 5000)
         self.max_side.setValue(1600)
 
-        self.grayscale = QCheckBox("灰度")
+        self.grayscale = QCheckBox(t("label_grayscale"))
 
         self.output = OutputOptions()
-        self.run_btn = QPushButton("开始压缩")
+        self.run_btn = QPushButton(t("btn_start_compress"))
+        self.image_label = QLabel(t("label_image_compress_options"))
 
         layout.addWidget(self.inputs)
         layout.addWidget(self.mode)
         layout.addWidget(self.preset)
         layout.addWidget(self.linearize)
         layout.addWidget(self.recompress)
-        layout.addWidget(QLabel("图片压缩参数"))
+        layout.addWidget(self.image_label)
         layout.addWidget(self.dpi)
         layout.addWidget(self.quality)
         layout.addWidget(self.max_side)
@@ -99,5 +101,17 @@ class CompressPanel(ToolPanel):
             params=params,
             overwrite=self.output.overwrite_checked(),
         )
+
+    def apply_language(self) -> None:
+        self.inputs.apply_language()
+        self.mode.setItemText(0, t("label_basic_compress"))
+        self.mode.setItemText(1, t("label_image_reencode"))
+        self.preset.apply_language()
+        self.linearize.setText(t("label_linearize"))
+        self.recompress.setText(t("label_recompress"))
+        self.grayscale.setText(t("label_grayscale"))
+        self.image_label.setText(t("label_image_compress_options"))
+        self.output.apply_language()
+        self.run_btn.setText(t("btn_start_compress"))
 
 

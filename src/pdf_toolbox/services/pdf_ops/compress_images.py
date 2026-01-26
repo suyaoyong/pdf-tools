@@ -4,12 +4,13 @@ import fitz
 from PIL import Image
 
 from pdf_toolbox.core.models import JobResult, JobSpec
+from pdf_toolbox.i18n import t
 from pdf_toolbox.services.pdf_ops.base import PdfOperation, ProgressCb
 
 
 class CompressImagesOperation(PdfOperation):
     tool_id = "compress_images"
-    display_name = "图片重编码压缩"
+    display_name = "Image Re-encode Compression"
 
     def run(self, spec: JobSpec, progress_cb: ProgressCb, token) -> JobResult:
         dpi = int(spec.params.get("dpi", 150))
@@ -39,7 +40,7 @@ class CompressImagesOperation(PdfOperation):
                 if token.is_cancelled():
                     doc.close()
                     out_doc.close()
-                    return JobResult(success=False, cancelled=True, error="任务已取消")
+                    return JobResult(success=False, cancelled=True, error=t("err_cancelled"))
                 page = doc.load_page(i)
                 zoom = dpi / 72.0
                 mat = fitz.Matrix(zoom, zoom)
@@ -56,7 +57,7 @@ class CompressImagesOperation(PdfOperation):
                 rect = fitz.Rect(0, 0, img.width * 72 / dpi, img.height * 72 / dpi)
                 out_page = out_doc.new_page(width=rect.width, height=rect.height)
                 out_page.insert_image(rect, stream=img_bytes)
-                progress_cb("processing", i + 1, total_pages, f"重编码页 {i + 1}")
+                progress_cb("processing", i + 1, total_pages, t("progress_reencode_page", page=i + 1))
 
             out_doc.save(out_path)
             out_doc.close()
